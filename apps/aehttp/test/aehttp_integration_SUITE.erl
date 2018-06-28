@@ -736,11 +736,12 @@ contract_transactions(_Config) ->    % miner has an account
                                      InitFunction,
                                      InitArgument),
 
+    ContractInitBalance = 1,
     ValidEncoded = #{ owner => MinerAddress,
                       code => Code,
                       vm_version => 1,
                       deposit => 2,
-                      amount => 1,
+                      amount => ContractInitBalance,
                       gas => 300,
                       gas_price => 1,
                       fee => 1,
@@ -766,6 +767,7 @@ contract_transactions(_Config) ->    % miner has an account
         get_contract_call_object(ContractCreateTxHash),
 
     {ok, 404, #{}} = get_contract_poi(EncodedContractPubKey),
+    {ok, 404, #{}} = get_contract_balance(EncodedContractPubKey),
 
     % mine a block
     aecore_suite_utils:mine_blocks(aecore_suite_utils:node_name(?NODE), 2),
@@ -797,6 +799,7 @@ contract_transactions(_Config) ->    % miner has an account
                                                          aec_trees:contracts(Trees)]),
     {ContractInPoI, _} = {ContractInTree, ContractInPoI},
 
+    {ok, 200, #{<<"balance">> := ContractInitBalance}} = get_contract_balance(EncodedContractPubKey),
     Function = <<"main">>,
     Argument = <<"42">>,
     {ok, EncodedCallData} =
@@ -4080,6 +4083,10 @@ get_peers() ->
 get_contract_poi(ContractAddress) ->
     Host = external_address(),
     http_request(Host, get, "poi/contract/" ++ binary_to_list(ContractAddress), []).
+
+get_contract_balance(ContractAddress) ->
+    Host = external_address(),
+    http_request(Host, get, "contract/" ++ binary_to_list(ContractAddress) ++ "/balance", []).
 
 %% ============================================================
 %% Test swagger validation errors
